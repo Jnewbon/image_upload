@@ -1,0 +1,75 @@
+version: '3'
+services:
+
+  web:
+    image: akkica/laravel-web:8.0
+    volumes:
+      - .:/var/www/html
+    environment:
+      VIRTUAL_HOST: website.docker
+      VIRTUAL_PORT: 80
+      COMPOSER_MEMORY_LIMIT: -1
+    depends_on:
+      - proxy
+
+  worker:
+    image: akkica/laravel-worker:8.0
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - redis
+
+  horizon:
+    image: akkica/laravel-horizon:8.0
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - redis
+
+  cron:
+    image: akkica/laravel-cron:8.0
+    volumes:
+      - .:/var/www/html
+
+  db:
+    image: mysql:8
+    volumes:
+      - db:/var/lib/mysql
+    ports:
+      - 33061:3306
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: root
+
+  redis:
+    image: redis
+    ports:
+      - 16379:6379
+    volumes:
+      - redis:/data
+
+  mailhog:
+    image: mailhog/mailhog
+    environment:
+      VIRTUAL_HOST: mailhog.website.docker
+      VIRTUAL_PORT: 8025
+    depends_on:
+      - proxy
+
+  proxy:
+    image: codekitchen/dinghy-http-proxy
+    environment:
+      DNS_IP: 127.0.0.1
+    ports:
+      - 80:80
+      - 443:443
+      - 19322:19322/udp
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./.devops/certs:/etc/nginx/certs
+
+volumes:
+  db:
+  redis:
+
+
